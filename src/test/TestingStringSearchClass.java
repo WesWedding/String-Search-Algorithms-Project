@@ -5,10 +5,15 @@ import java.util.*;
 
 
 public class TestingStringSearchClass {
+	
+	/*
+	 * Basic Class Testing
+	 */
+	
 	@Test
 	public void testStringLoadEmpty() {
 		StringSearch search = new StringSearch();
-		
+		assertTrue(search.text != null);
 	}
 	
 	@Test
@@ -17,6 +22,9 @@ public class TestingStringSearchClass {
 		assertEquals(search.text = originTenChapts);
 	}
 	
+	/* 
+	 * Sequential Tests
+	 */
 	@Test
 	public void testStringSearchSequentialExistsSimple() {
 		StringSearch search = new StringSearch("strings are here");
@@ -41,8 +49,63 @@ public class TestingStringSearchClass {
 		assertEquals(search.seqSearch("Nintendo"), 0);
 	}
 	
+	/*
+	 * Boyer-Moore Algo tests
+	 */
 	
+	@Test
+	public void testStringSearchBoyerExistsSimple() {
+		StringSearch search = new StringSearch("strings are here");
+		assertEquals(search.boyerSearch("strings"), 1);
+	}
+	@Test
+	public void testStringSearchBoyerNotExistsSimple() {
+		StringSearch search = new StringSearch("strings are here");
+		assertEquals(search.boyerSearch(), "");
+	}
 	
+	@Test
+	public void testStringSearchBoyerExistsLong() {
+		//There should only be 9 exact matches of the string
+		// "species" according to Eclipse IDE's find/replace
+		StringSearch search = new StringSearch(originTenChapts);
+		assertEquals(search.boyerSearch("species"), 9);
+	}
+	@Test
+	public void testStringSearchBoyerNotExistsLong() {
+		StringSearch search = new StringSearch(originTenChapts);
+		assertEquals(search.boyerSearch("Nintendo"), 0);
+	}
+	
+	/*
+	 * Hoorspool Algo tests
+	 */
+			
+	@Test
+	public void testStringSearchHoorspoolExistsSimple() {
+		StringSearch search = new StringSearch("strings are here");
+		assertEquals(search.horSearch("strings"), 1);
+	}
+	@Test
+	public void testStringSearchHoorspoolNotExistsSimple() {
+		StringSearch search = new StringSearch("strings are here");
+		assertEquals(search.horSearch(), "");
+	}
+	
+	@Test
+	public void testStringSearchHoorspoolExistsLong() {
+		//There should only be 9 exact matches of the string
+		// "species" according to Eclipse IDE's find/replace
+		StringSearch search = new StringSearch(originTenChapts);
+		assertEquals(search.horSearch("species"), 9);
+	}
+	@Test
+	public void testStringSearchHoorspoolNotExistsLong() {
+		StringSearch search = new StringSearch(originTenChapts);
+		assertEquals(search.horSearch("Nintendo"), 0);
+	}
+	
+		
 	String originTenChapts = new String("ON THE ORIGIN OF SPECIES.\n" + 
 			"\n" + 
 			"OR THE PRESERVATION OF FAVOURED RACES IN THE STRUGGLE FOR LIFE.\n" + 
