@@ -2,7 +2,7 @@ package test;
 import org.junit.*;
 import static org.junit.Assert.*;
 import java.util.*;
-
+import stringsearch.StringSearch;;
 
 public class TestingStringSearchClass {
 	
@@ -13,13 +13,15 @@ public class TestingStringSearchClass {
 	@Test
 	public void testStringLoadEmpty() {
 		StringSearch search = new StringSearch();
-		assertTrue(search.text != null);
+		assertEquals(null, search.text, "");
 	}
 	
 	@Test
 	public void testStringLoadCorrectLong() {
 		StringSearch search = new StringSearch(originTenChapts);
-		assertEquals(search.text = originTenChapts);
+		assertEquals("Constructor Passing Failure",search.text = originTenChapts);
+		search.setString(originTenChapts);
+		assertEquals("Method Setting Failure",search.text = originTenChapts);
 	}
 	
 	/* 
@@ -33,7 +35,7 @@ public class TestingStringSearchClass {
 	@Test
 	public void testStringSearchSequentialNotExistsSimple() {
 		StringSearch search = new StringSearch("strings are here");
-		assertEquals(search.seqSearch(), "");
+		assertEquals(search.seqSearch("apples"), "");
 	}
 	
 	@Test
