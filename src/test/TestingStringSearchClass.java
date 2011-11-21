@@ -31,6 +31,8 @@ public class TestingStringSearchClass {
 	public void testStringSearchSequentialExistsSimple() {
 		StringSearch search = new StringSearch("strings are here");
 		assertEquals(0, search.getIndex("strings", StringSearch.SearchType.BRUTE));
+		assertEquals(8, search.getIndex("are", StringSearch.SearchType.BRUTE));
+		assertEquals(10, search.getIndex("e here", StringSearch.SearchType.BRUTE));
 	}
 	@Test
 	public void testStringSearchSequentialNotExistsSimple() {
@@ -43,7 +45,7 @@ public class TestingStringSearchClass {
 		//There should only be 9 exact matches of the string
 		// "species" according to Eclipse IDE's find/replace
 		StringSearch search = new StringSearch(originTenChapts);
-		assertEquals(1731, search.getIndex("species", StringSearch.SearchType.BRUTE));
+		assertEquals(1661, search.getIndex("species", StringSearch.SearchType.BRUTE));
 	}
 	@Test
 	public void testStringSearchSequentialNotExistsLong() {
@@ -58,7 +60,9 @@ public class TestingStringSearchClass {
 	@Test
 	public void testStringSearchBoyerExistsSimple() {
 		StringSearch search = new StringSearch("strings are here");
-		assertEquals(1, search.getIndex("strings", StringSearch.SearchType.BOYER));
+		assertEquals(0, search.getIndex("strings", StringSearch.SearchType.BOYER));
+		assertEquals(8, search.getIndex("are", StringSearch.SearchType.BOYER));
+		assertEquals(10, search.getIndex("e here", StringSearch.SearchType.BOYER));
 	}
 	@Test
 	public void testStringSearchBoyerNotExistsSimple() {
@@ -86,12 +90,15 @@ public class TestingStringSearchClass {
 	@Test
 	public void testStringSearchHoorspoolExistsSimple() {
 		StringSearch search = new StringSearch("strings are here");
-		assertEquals(search.getIndex("strings", StringSearch.SearchType.HOR), 1);
+		assertEquals(0, search.getIndex("strings", StringSearch.SearchType.HOR));
+		assertEquals("Couldn't find are in simple string.",8, search.getIndex("are", StringSearch.SearchType.HOR));
+		assertEquals("Couldn't find \"e here\" in simple string.", 10, search.getIndex("e here", StringSearch.SearchType.HOR));
+		
 	}
 	@Test
 	public void testStringSearchHoorspoolNotExistsSimple() {
 		StringSearch search = new StringSearch("strings are here");
-		assertEquals(search.getIndex("apples", StringSearch.SearchType.HOR), 0);
+		assertEquals(-1, search.getIndex("apples", StringSearch.SearchType.HOR));
 	}
 	
 	@Test
@@ -99,13 +106,19 @@ public class TestingStringSearchClass {
 		//There should only be 9 exact matches of the string
 		// "species" according to Eclipse IDE's find/replace
 		StringSearch search = new StringSearch(originTenChapts);
-		assertEquals(search.getIndex("species", StringSearch.SearchType.HOR), 1731);
+		assertEquals(1661, search.getIndex("species", StringSearch.SearchType.HOR));
 	}
 	@Test
 	public void testStringSearchHoorspoolNotExistsLong() {
 		StringSearch search = new StringSearch(originTenChapts);
-		assertEquals(search.getIndex("Nintendo", StringSearch.SearchType.HOR), 0);
+		assertEquals(-1, search.getIndex("Nintendo", StringSearch.SearchType.HOR));
 	}
+	
+	/*@Test
+	public void testGenerateAlphabet() {
+		StringSearch search = new StringSearch();
+		alphastrn
+	} */
 	
 		
 	String originTenChapts = new String("ON THE ORIGIN OF SPECIES.\n" + 
