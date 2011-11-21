@@ -2,7 +2,7 @@ package test;
 import org.junit.*;
 import static org.junit.Assert.*;
 import java.util.*;
-import stringsearch.StringSearch;;
+import stringsearch.*;
 
 public class TestingStringSearchClass {
 	
@@ -19,9 +19,9 @@ public class TestingStringSearchClass {
 	@Test
 	public void testStringLoadCorrectLong() {
 		StringSearch search = new StringSearch(originTenChapts);
-		assertEquals("Constructor Passing Failure",search.text = originTenChapts);
+		assertEquals("Constructor Passing Failure",search.text, originTenChapts);
 		search.setString(originTenChapts);
-		assertEquals("Method Setting Failure",search.text = originTenChapts);
+		assertEquals("Method Setting Failure",search.text, originTenChapts);
 	}
 	
 	/* 
@@ -30,12 +30,12 @@ public class TestingStringSearchClass {
 	@Test
 	public void testStringSearchSequentialExistsSimple() {
 		StringSearch search = new StringSearch("strings are here");
-		assertEquals(search.seqSearch("strings"), 1);
+		assertEquals(0, search.getIndex("strings", StringSearch.SearchType.BRUTE));
 	}
 	@Test
 	public void testStringSearchSequentialNotExistsSimple() {
 		StringSearch search = new StringSearch("strings are here");
-		assertEquals(search.seqSearch("apples"), "");
+		assertEquals(-1, search.getIndex("apples", StringSearch.SearchType.BRUTE));
 	}
 	
 	@Test
@@ -43,12 +43,12 @@ public class TestingStringSearchClass {
 		//There should only be 9 exact matches of the string
 		// "species" according to Eclipse IDE's find/replace
 		StringSearch search = new StringSearch(originTenChapts);
-		assertEquals(search.seqSearch("species"), 9);
+		assertEquals(1731, search.getIndex("species", StringSearch.SearchType.BRUTE));
 	}
 	@Test
 	public void testStringSearchSequentialNotExistsLong() {
 		StringSearch search = new StringSearch(originTenChapts);
-		assertEquals(search.seqSearch("Nintendo"), 0);
+		assertEquals(-1 ,search.getIndex("Nintendo", StringSearch.SearchType.BRUTE), 0);
 	}
 	
 	/*
@@ -58,12 +58,12 @@ public class TestingStringSearchClass {
 	@Test
 	public void testStringSearchBoyerExistsSimple() {
 		StringSearch search = new StringSearch("strings are here");
-		assertEquals(search.boyerSearch("strings"), 1);
+		assertEquals(1, search.getIndex("strings", StringSearch.SearchType.BOYER));
 	}
 	@Test
 	public void testStringSearchBoyerNotExistsSimple() {
 		StringSearch search = new StringSearch("strings are here");
-		assertEquals(search.boyerSearch(), "");
+		assertEquals(-1, search.getIndex("apples", StringSearch.SearchType.BOYER));;
 	}
 	
 	@Test
@@ -71,12 +71,12 @@ public class TestingStringSearchClass {
 		//There should only be 9 exact matches of the string
 		// "species" according to Eclipse IDE's find/replace
 		StringSearch search = new StringSearch(originTenChapts);
-		assertEquals(search.boyerSearch("species"), 9);
+		assertEquals(search.getIndex("species", StringSearch.SearchType.BOYER), 1731);
 	}
 	@Test
 	public void testStringSearchBoyerNotExistsLong() {
 		StringSearch search = new StringSearch(originTenChapts);
-		assertEquals(search.boyerSearch("Nintendo"), 0);
+		assertEquals(search.getIndex("Nintendo", StringSearch.SearchType.BOYER), 0);
 	}
 	
 	/*
@@ -86,12 +86,12 @@ public class TestingStringSearchClass {
 	@Test
 	public void testStringSearchHoorspoolExistsSimple() {
 		StringSearch search = new StringSearch("strings are here");
-		assertEquals(search.horSearch("strings"), 1);
+		assertEquals(search.getIndex("strings", StringSearch.SearchType.HOR), 1);
 	}
 	@Test
 	public void testStringSearchHoorspoolNotExistsSimple() {
 		StringSearch search = new StringSearch("strings are here");
-		assertEquals(search.horSearch(), "");
+		assertEquals(search.getIndex("apples", StringSearch.SearchType.HOR), 0);
 	}
 	
 	@Test
@@ -99,12 +99,12 @@ public class TestingStringSearchClass {
 		//There should only be 9 exact matches of the string
 		// "species" according to Eclipse IDE's find/replace
 		StringSearch search = new StringSearch(originTenChapts);
-		assertEquals(search.horSearch("species"), 9);
+		assertEquals(search.getIndex("species", StringSearch.SearchType.HOR), 1731);
 	}
 	@Test
 	public void testStringSearchHoorspoolNotExistsLong() {
 		StringSearch search = new StringSearch(originTenChapts);
-		assertEquals(search.horSearch("Nintendo"), 0);
+		assertEquals(search.getIndex("Nintendo", StringSearch.SearchType.HOR), 0);
 	}
 	
 		
