@@ -35,10 +35,10 @@ public class StringSearch {
 		switch (sType) {
 		case BRUTE:
 			return bruteSearch(text.toCharArray(), needle.toCharArray(), text.length(), needle.length());
-		case BOYER:
 		case HOR:
 			char[] alpha = genAlphabet(text);
 			return horSearch(text.toCharArray(), needle.toCharArray(), text.length(), needle.length(), alpha);
+		case BOYER:
 		default:
 			return -1;
 		}
