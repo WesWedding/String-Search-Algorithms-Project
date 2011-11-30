@@ -1,10 +1,71 @@
 package test;
 import org.junit.*;
 import static org.junit.Assert.*;
+
+import java.io.*;
 import java.util.*;
 import stringsearch.*;
 
 public class TestingStringSearchClass {
+	
+	private String originSpecies = null;
+	private String kingJames = null;
+	private String partialDarwin = null;
+	private String partialBible = null;
+	private int nSize = 0, testLoops = 500; 
+	private StringSearch originSearch, bibleSearch;
+	
+	/**
+	 * 
+	 */
+	public TestingStringSearchClass() {
+		try {
+			 originSpecies = readTextFile("fulldarwin.txt");
+			 kingJames = readTextFile("fullbible.txt");
+		} catch (Exception e) {
+			throw new Error("Failed to open files");
+		}
+	}
+	
+	private void TestInit(int textLength) {
+		nSize = textLength;
+		partialDarwin = new String(originSpecies.substring(0, textLength));
+		partialBible = new String(kingJames.substring(0, textLength));
+		originSearch = new StringSearch(partialDarwin);
+		bibleSearch = new StringSearch(partialBible);	
+	}
+	
+	private void TestCleanup() {
+		partialDarwin = new String();
+		partialBible = new String();
+		originSearch = new StringSearch();
+		bibleSearch = new StringSearch();	
+	}
+	
+	
+	/**
+	 * Credit goes to Gervase Gallant (http://www.javazoid.com/foj_file.html#ReadTextfile)
+	 * Allows you to easily load an entire file with a single command line.
+	 *  
+	 * @param fullPathFilename
+	 * @return
+	 * @throws IOException
+	 */
+	public static String readTextFile(String fullPathFilename) throws IOException {
+		StringBuffer sb = new StringBuffer(1024);
+		BufferedReader reader = new BufferedReader(new FileReader(fullPathFilename));
+				
+		char[] chars = new char[1024];
+		int numRead = 0;
+		while( (numRead = reader.read(chars)) > -1){
+			sb.append(String.valueOf(chars));	
+		}
+
+		reader.close();
+
+		return sb.toString();
+	}	
+	
 	
 	/*
 	 * Basic Class Testing
@@ -18,10 +79,10 @@ public class TestingStringSearchClass {
 	
 	@Test
 	public void testStringLoadCorrectLong() {
-		StringSearch search = new StringSearch(originTenChapts);
-		assertEquals("Constructor Passing Failure",search.text, originTenChapts);
-		search.setString(originTenChapts);
-		assertEquals("Method Setting Failure",search.text, originTenChapts);
+		StringSearch search = new StringSearch(originSpecies);
+		assertEquals("Constructor Passing Failure",search.text, originSpecies);
+		search.setString(originSpecies);
+		assertEquals("Method Setting Failure",search.text, originSpecies);
 	}
 	
 	/* 
@@ -44,12 +105,12 @@ public class TestingStringSearchClass {
 	public void testStringSearchSequentialExistsLong() {
 		//There should only be 9 exact matches of the string
 		// "species" according to Eclipse IDE's find/replace
-		StringSearch search = new StringSearch(originTenChapts);
-		assertEquals(1661, search.getIndex("species", StringSearch.SearchType.BRUTE));
+		StringSearch search = new StringSearch(originSpecies);
+		assertEquals(2331, search.getIndex("species", StringSearch.SearchType.BRUTE));
 	}
 	@Test
 	public void testStringSearchSequentialNotExistsLong() {
-		StringSearch search = new StringSearch(originTenChapts);
+		StringSearch search = new StringSearch(originSpecies);
 		assertEquals(-1 ,search.getIndex("Nintendo", StringSearch.SearchType.BRUTE), 0);
 	}
 	
@@ -67,19 +128,19 @@ public class TestingStringSearchClass {
 	@Test
 	public void testStringSearchBoyerNotExistsSimple() {
 		StringSearch search = new StringSearch("strings are here");
-		assertEquals(-1, search.getIndex("apples", StringSearch.SearchType.BOYER));;
+		assertEquals(-1, search.getIndex("apples", StringSearch.SearchType.BOYER));
 	}
 	
 	@Test
 	public void testStringSearchBoyerExistsLong() {
 		//There should only be 9 exact matches of the string
 		// "species" according to Eclipse IDE's find/replace
-		StringSearch search = new StringSearch(originTenChapts);
+		StringSearch search = new StringSearch(originSpecies);
 		assertEquals(1661, search.getIndex("species", StringSearch.SearchType.BOYER));
 	}
 	@Test
 	public void testStringSearchBoyerNotExistsLong() {
-		StringSearch search = new StringSearch(originTenChapts);
+		StringSearch search = new StringSearch(originSpecies);
 		assertEquals(-1, search.getIndex("Nintendo", StringSearch.SearchType.BOYER));
 	}
 	
@@ -105,12 +166,12 @@ public class TestingStringSearchClass {
 	public void testStringSearchHoorspoolExistsLong() {
 		//There should only be 9 exact matches of the string
 		// "species" according to Eclipse IDE's find/replace
-		StringSearch search = new StringSearch(originTenChapts);
+		StringSearch search = new StringSearch(originSpecies);
 		assertEquals(1661, search.getIndex("species", StringSearch.SearchType.HOR));
 	}
 	@Test
 	public void testStringSearchHoorspoolNotExistsLong() {
-		StringSearch search = new StringSearch(originTenChapts);
+		StringSearch search = new StringSearch(originSpecies);
 		assertEquals(-1, search.getIndex("Nintendo", StringSearch.SearchType.HOR));
 	}
 	
@@ -120,8 +181,117 @@ public class TestingStringSearchClass {
 		alphastrn
 	} */
 	
+	@Test
+	public void testAll3WithSize100NotFound() {
+		TestInit(100);
+		assertEquals("Origins string too short.",nSize, partialDarwin.length());
+		assertEquals("Origins string too short.",nSize, partialBible.length());
+		for(int i = 1; i <= testLoops; i++) {
+			assertEquals(-1, originSearch.getIndex("Nintendo", StringSearch.SearchType.HOR));
+			assertEquals(-1, originSearch.getIndex("Nintendo", StringSearch.SearchType.BRUTE));
+			//assertEquals(-1, originSearch.getIndex("Nintendo", StringSearch.SearchType.BOYER));
+			assertEquals(-1, bibleSearch.getIndex("Nintendo", StringSearch.SearchType.HOR));
+			assertEquals(-1, bibleSearch.getIndex("Nintendo", StringSearch.SearchType.BRUTE));
+			//assertEquals(-1, bibleSearch.getIndex("Nintendo", StringSearch.SearchType.BOYER));
+		}		
+		TestCleanup();
+	}
+	@Test
+	public void testAll3WithSize1000NotFound() {
+		TestInit(1000);
+		assertEquals("Origins string too short.",nSize, partialDarwin.length());
+		assertEquals("Origins string too short.",nSize, partialBible.length());
+		for(int i = 1; i <= testLoops; i++) {
+			assertEquals(-1, originSearch.getIndex("Nintendo", StringSearch.SearchType.HOR));
+			assertEquals(-1, originSearch.getIndex("Nintendo", StringSearch.SearchType.BRUTE));
+			//assertEquals(-1, originSearch.getIndex("Nintendo", StringSearch.SearchType.BOYER));
+			assertEquals(-1, bibleSearch.getIndex("Nintendo", StringSearch.SearchType.HOR));
+			assertEquals(-1, bibleSearch.getIndex("Nintendo", StringSearch.SearchType.BRUTE));
+			//assertEquals(-1, bibleSearch.getIndex("Nintendo", StringSearch.SearchType.BOYER));
+		}	
+		TestCleanup();		
+	}
+	@Test
+	public void testAll3WithSize10000NotFound() {
+		TestInit(10000);
+		assertEquals("Origins string too short.",nSize, partialDarwin.length());
+		assertEquals("Origins string too short.",nSize, partialBible.length());
+		for(int i = 1; i <= testLoops; i++) {
+			assertEquals(-1, originSearch.getIndex("Nintendo", StringSearch.SearchType.HOR));
+			assertEquals(-1, originSearch.getIndex("Nintendo", StringSearch.SearchType.BRUTE));
+			//assertEquals(-1, originSearch.getIndex("Nintendo", StringSearch.SearchType.BOYER));
+			assertEquals(-1, bibleSearch.getIndex("Nintendo", StringSearch.SearchType.HOR));
+			assertEquals(-1, bibleSearch.getIndex("Nintendo", StringSearch.SearchType.BRUTE));
+			//assertEquals(-1, bibleSearch.getIndex("Nintendo", StringSearch.SearchType.BOYER));
+		}	
+		TestCleanup();		
+	}
+	@Test
+	public void testAll3WithSize100000NotFound() {
+		TestInit(100000);
+		assertEquals("Origins string too short.",nSize, partialDarwin.length());
+		assertEquals("Origins string too short.",nSize, partialBible.length());
+		for(int i = 1; i <= testLoops; i++) {
+			assertEquals(-1, originSearch.getIndex("Nintendo", StringSearch.SearchType.HOR));
+			assertEquals(-1, originSearch.getIndex("Nintendo", StringSearch.SearchType.BRUTE));
+			//assertEquals(-1, originSearch.getIndex("Nintendo", StringSearch.SearchType.BOYER));
+			assertEquals(-1, bibleSearch.getIndex("Nintendo", StringSearch.SearchType.HOR));
+			assertEquals(-1, bibleSearch.getIndex("Nintendo", StringSearch.SearchType.BRUTE));
+			//assertEquals(-1, bibleSearch.getIndex("Nintendo", StringSearch.SearchType.BOYER));
+		}	
+		TestCleanup();
+	}
+
+	@Test
+	public void testAll3WithSize1000000NotFound() {
+		TestInit(1000000);
+		assertEquals("Origins string too short.",nSize, partialDarwin.length());
+		assertEquals("Origins string too short.",nSize, partialBible.length());
+		for(int i = 1; i <= testLoops; i++) {
+			assertEquals(-1, originSearch.getIndex("Nintendo", StringSearch.SearchType.HOR));
+			assertEquals(-1, originSearch.getIndex("Nintendo", StringSearch.SearchType.BRUTE));
+			//assertEquals(-1, originSearch.getIndex("Nintendo", StringSearch.SearchType.BOYER));
+			assertEquals(-1, bibleSearch.getIndex("Nintendo", StringSearch.SearchType.HOR));
+			assertEquals(-1, bibleSearch.getIndex("Nintendo", StringSearch.SearchType.BRUTE));
+			//assertEquals(-1, bibleSearch.getIndex("Nintendo", StringSearch.SearchType.BOYER));
+		}	
+		TestCleanup();
+	}
+	
+	@Test
+	public void testAll3WithSize100Found() {
+		TestInit(100);
+		assertEquals("Origins string too short.",nSize, partialDarwin.length());
+		assertEquals("Origins string too short.",nSize, partialBible.length());
+		for(int i = 1; i <= testLoops; i++) {
+			assertEquals(-1, originSearch.getIndex("species", StringSearch.SearchType.HOR));
+			assertEquals(-1, originSearch.getIndex("species", StringSearch.SearchType.BRUTE));
+			//assertEquals(-1, originSearch.getIndex("species", StringSearch.SearchType.BOYER));
+			assertEquals(-1, bibleSearch.getIndex("Jesus", StringSearch.SearchType.HOR));
+			assertEquals(-1, bibleSearch.getIndex("Jesus", StringSearch.SearchType.BRUTE));
+			//assertEquals(-1, bibleSearch.getIndex("Jesus", StringSearch.SearchType.BOYER));
+		}		
+		TestCleanup();
+	}
+	
+	
+	/*@Test
+	public void testStringSearchHoorspoolExistsLong100000() {
+		StringSearch search = new StringSearch(originSpecies);
+		for(int i = 1; i <= 10000; i++) {
+			assertEquals(2331, search.getIndex("species", StringSearch.SearchType.HOR));			
+		}
+	}
+	
+	@Test
+	public void testStringSearchHoorspoolNotExistsLong100000() {
+		StringSearch search = new StringSearch(originSpecies);
+		for(int i = 1; i <= 10000; i++) {
+			assertEquals(2331, search.getIndex("Nintendo", StringSearch.SearchType.HOR));			
+		}
+	}*/
 		
-	String originTenChapts = new String("ON THE ORIGIN OF SPECIES.\n" + 
+	/* String originTenChapts = new String("ON THE ORIGIN OF SPECIES.\n" + 
 			"\n" + 
 			"OR THE PRESERVATION OF FAVOURED RACES IN THE STRUGGLE FOR LIFE.\n" + 
 			"\n" + 
@@ -332,5 +502,5 @@ public class TestingStringSearchClass {
 			"  On the state of development of ancient forms.\n" + 
 			"  On the succession of the same types within the same areas.\n" + 
 			"  Summary of preceding and present chapters.");
-	
+	*/
 }
