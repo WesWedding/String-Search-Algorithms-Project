@@ -40,7 +40,7 @@ public class StringSearch {
 			return horSearch(text.toCharArray(), needle.toCharArray(), text.length(), needle.length(), alpha);
 		case BOYER:
 		default:
-			return -1;
+			return -500;
 		}
 	}
 	

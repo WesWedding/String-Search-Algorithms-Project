@@ -75,12 +75,12 @@ public class TestingStringSearchClass {
 		//There should only be 9 exact matches of the string
 		// "species" according to Eclipse IDE's find/replace
 		StringSearch search = new StringSearch(originTenChapts);
-		assertEquals(search.getIndex("species", StringSearch.SearchType.BOYER), 1731);
+		assertEquals(1661, search.getIndex("species", StringSearch.SearchType.BOYER));
 	}
 	@Test
 	public void testStringSearchBoyerNotExistsLong() {
 		StringSearch search = new StringSearch(originTenChapts);
-		assertEquals(search.getIndex("Nintendo", StringSearch.SearchType.BOYER), 0);
+		assertEquals(-1, search.getIndex("Nintendo", StringSearch.SearchType.BOYER));
 	}
 	
 	/*
