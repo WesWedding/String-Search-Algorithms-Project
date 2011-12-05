@@ -10,10 +10,26 @@ public class TestingStringSearchClass {
 	
 	private String originSpecies = null;
 	private String kingJames = null;
+	private String generatedText = "";
 	private String partialDarwin = null;
 	private String partialBible = null;
-	private int nSize = 0, testLoops = 500; 
-	private StringSearch originSearch, bibleSearch;
+	private String partialGenerated = null;
+	private String darwinPattern, biblePattern, generatedPattern;
+	private int nSize = 0; 
+	private long testLoops = 1000;
+	private StringSearch originSearch, bibleSearch, generatedSearch;
+	char[] alphabetChoices = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p'};
+	
+	// Initially used to determine where a pattern might fall in the text
+	// but hijacked to generate specific worst-case pattern types
+	public enum PatternLocation {
+		HALFWAY, END, NONE, BRUTEWORST, HORWORST, BOYERWORST
+	};
+	
+	public enum TextChoice {
+		ORIGINS, BIBLE, GENERATED
+	};
+	
 	
 	/**
 	 * 
@@ -27,14 +43,120 @@ public class TestingStringSearchClass {
 		}
 	}
 	
-	private void TestInit(int textLength) {
+	private void TestInit(int textLength, int patternSize, PatternLocation loc) {
+		int startIndex, endIndex;
 		nSize = textLength;
-		partialDarwin = new String(originSpecies.substring(0, textLength));
-		partialBible = new String(kingJames.substring(0, textLength));
+		if (textLength <= originSpecies.length()) {
+			partialDarwin = new String(originSpecies.substring(0, textLength));
+		} else {
+			partialDarwin = originSpecies;
+		}
+			
+		if (textLength <= kingJames.length()) {
+			partialBible = new String(kingJames.substring(0, textLength));
+		} else {
+			partialBible = kingJames;
+		}
+		
+		if (textLength <= generatedText.length()) {
+			partialGenerated = new String(generatedText.substring(0, textLength));
+		} else {
+			partialGenerated = generatedText;
+		}
 		originSearch = new StringSearch(partialDarwin);
-		bibleSearch = new StringSearch(partialBible);	
+		bibleSearch = new StringSearch(partialBible);
+		generatedSearch = new StringSearch(partialGenerated);
+		
+				
+		generatePattern(loc, -1, patternSize);
 	}
+		
 	
+	private void generateText(int length, int alphabetSize) {
+		Random rand = new Random(System.currentTimeMillis());
+		generatedText = new String();
+		for(int i = 0; i< length ;i++) {
+			generatedText += alphabetChoices[rand.nextInt(alphabetSize)];
+		}
+	}	
+	
+	private void generatePattern(PatternLocation type, int patternStart, int patternSize) {
+		int startIndex, endIndex;
+		darwinPattern = new String();
+		biblePattern = new String();
+		char nadda = '\u000F';
+		switch(type) {
+		case HALFWAY:
+			startIndex = partialDarwin.length()/2;
+			endIndex = partialDarwin.length()/2 + patternSize;
+			if(endIndex >= partialDarwin.length()) {
+				endIndex = partialDarwin.length() - 1;
+			}
+			darwinPattern = partialDarwin.substring(startIndex, endIndex);
+			startIndex = partialBible.length()/2;
+			endIndex = partialBible.length()/2 + patternSize;
+			if(endIndex >= partialBible.length()) {
+				endIndex = partialBible.length() - 1;
+			}
+			biblePattern = partialBible.substring(startIndex, endIndex);
+			break;
+		case END:
+			startIndex = partialDarwin.length() - patternSize;
+			endIndex = partialDarwin.length();
+			darwinPattern = partialDarwin.substring(startIndex, endIndex);
+			biblePattern = partialBible.substring(startIndex, endIndex);
+			break;
+		case NONE:
+			char unusual = '\u000F';
+			for(int i = 1; i <= patternSize; i++) {
+				darwinPattern += unusual;
+				biblePattern += unusual;
+			}
+			break;
+		case BRUTEWORST:
+			//generatedPattern
+			startIndex = patternStart;
+			endIndex = startIndex + patternSize;
+			
+			if(endIndex >= partialGenerated.length()) {
+				endIndex = partialGenerated.length() - 1;
+			}
+			generatedPattern = partialGenerated.substring(startIndex, endIndex);
+			generatedPattern = generatedPattern.substring(0, generatedPattern.length() - 1) + nadda;
+			
+			//Failed attempt to generate worst cases in a useful fashion for "real" text
+			/*if(endIndex >= partialDarwin.length()) {
+				endIndex = partialDarwin.length() - 1;
+			}
+			darwinPattern = partialDarwin.substring(startIndex, endIndex);
+			//Replace the last character
+			darwinPattern = darwinPattern.substring(0, darwinPattern.length() - 1) + nadda;
+			
+			startIndex = patternStart;
+			endIndex = startIndex + patternSize;
+			if(endIndex >= partialBible.length()) {
+				endIndex = partialBible.length() - 1;
+			}
+			biblePattern = partialBible.substring(startIndex, endIndex);	
+			biblePattern = biblePattern.substring(0, biblePattern.length() - 1) + nadda; */
+			
+			
+			break;
+		case HORWORST: //Depends on the string being a single character
+			startIndex = patternStart;
+			endIndex = startIndex + patternSize;
+			if(endIndex >= partialGenerated.length()) {
+				endIndex = partialGenerated.length() - 1;
+			}
+			generatedPattern = partialGenerated.substring(startIndex, endIndex);
+			generatedPattern = nadda + generatedPattern.substring(1, generatedPattern.length() - 1);
+			break;
+		case BOYERWORST:
+			//TODO: find a way to beat the heuristics
+			break;
+		}
+	}
+
 	private void TestCleanup() {
 		partialDarwin = new String();
 		partialBible = new String();
@@ -91,14 +213,14 @@ public class TestingStringSearchClass {
 	@Test
 	public void testStringSearchSequentialExistsSimple() {
 		StringSearch search = new StringSearch("strings are here");
-		assertEquals(0, search.getIndex("strings", StringSearch.SearchType.BRUTE));
-		assertEquals(8, search.getIndex("are", StringSearch.SearchType.BRUTE));
-		assertEquals(10, search.getIndex("e here", StringSearch.SearchType.BRUTE));
+		assertEquals(0, search.getIndex("strings", StringSearch.SearchType.BRUTE, null));
+		assertEquals(8, search.getIndex("are", StringSearch.SearchType.BRUTE, null));
+		assertEquals(10, search.getIndex("e here", StringSearch.SearchType.BRUTE, null));
 	}
 	@Test
 	public void testStringSearchSequentialNotExistsSimple() {
 		StringSearch search = new StringSearch("strings are here");
-		assertEquals(-1, search.getIndex("apples", StringSearch.SearchType.BRUTE));
+		assertEquals(-1, search.getIndex("apples", StringSearch.SearchType.BRUTE, null));
 	}
 	
 	@Test
@@ -106,12 +228,12 @@ public class TestingStringSearchClass {
 		//There should only be 9 exact matches of the string
 		// "species" according to Eclipse IDE's find/replace
 		StringSearch search = new StringSearch(originSpecies);
-		assertEquals(2331, search.getIndex("species", StringSearch.SearchType.BRUTE));
+		assertEquals(2331, search.getIndex("species", StringSearch.SearchType.BRUTE, null));
 	}
 	@Test
 	public void testStringSearchSequentialNotExistsLong() {
 		StringSearch search = new StringSearch(originSpecies);
-		assertEquals(-1 ,search.getIndex("Nintendo", StringSearch.SearchType.BRUTE), 0);
+		assertEquals(-1 ,search.getIndex("Nintendo", StringSearch.SearchType.BRUTE, null), 0);
 	}
 	
 	/*
@@ -121,14 +243,16 @@ public class TestingStringSearchClass {
 	@Test
 	public void testStringSearchBoyerExistsSimple() {
 		StringSearch search = new StringSearch("strings are here");
-		assertEquals(0, search.getIndex("strings", StringSearch.SearchType.BOYER));
-		assertEquals(8, search.getIndex("are", StringSearch.SearchType.BOYER));
-		assertEquals(10, search.getIndex("e here", StringSearch.SearchType.BOYER));
+		char[] alpha = search.genAlphabet(search.text);
+		assertEquals(0, search.getIndex("strings", StringSearch.SearchType.BOYER, alpha));
+		assertEquals(8, search.getIndex("are", StringSearch.SearchType.BOYER, alpha));
+		assertEquals(10, search.getIndex("e here", StringSearch.SearchType.BOYER, alpha));
 	}
 	@Test
 	public void testStringSearchBoyerNotExistsSimple() {
 		StringSearch search = new StringSearch("strings are here");
-		assertEquals(-1, search.getIndex("apples", StringSearch.SearchType.BOYER));
+		char[] alpha = search.genAlphabet(search.text);
+		assertEquals(-1, search.getIndex("ABCBAB", StringSearch.SearchType.BOYER, alpha));
 	}
 	
 	@Test
@@ -136,12 +260,14 @@ public class TestingStringSearchClass {
 		//There should only be 9 exact matches of the string
 		// "species" according to Eclipse IDE's find/replace
 		StringSearch search = new StringSearch(originSpecies);
-		assertEquals(1661, search.getIndex("species", StringSearch.SearchType.BOYER));
+		char[] alpha = search.genAlphabet(search.text);
+		assertEquals(2331, search.getIndex("species", StringSearch.SearchType.BOYER, alpha));
 	}
 	@Test
 	public void testStringSearchBoyerNotExistsLong() {
 		StringSearch search = new StringSearch(originSpecies);
-		assertEquals(-1, search.getIndex("Nintendo", StringSearch.SearchType.BOYER));
+		char[] alpha = search.genAlphabet(search.text);
+		assertEquals(-1, search.getIndex("Nintendo", StringSearch.SearchType.BOYER, alpha));
 	}
 	
 	/*
@@ -151,15 +277,17 @@ public class TestingStringSearchClass {
 	@Test
 	public void testStringSearchHoorspoolExistsSimple() {
 		StringSearch search = new StringSearch("strings are here");
-		assertEquals(0, search.getIndex("strings", StringSearch.SearchType.HOR));
-		assertEquals("Couldn't find are in simple string.",8, search.getIndex("are", StringSearch.SearchType.HOR));
-		assertEquals("Couldn't find \"e here\" in simple string.", 10, search.getIndex("e here", StringSearch.SearchType.HOR));
+		char[] alpha = search.genAlphabet(search.text);
+		assertEquals(0, search.getIndex("strings", StringSearch.SearchType.HOR, alpha));
+		assertEquals("Couldn't find are in simple string.",8, search.getIndex("are", StringSearch.SearchType.HOR, alpha));
+		assertEquals("Couldn't find \"e here\" in simple string.", 10, search.getIndex("e here", StringSearch.SearchType.HOR, alpha));
 		
 	}
 	@Test
 	public void testStringSearchHoorspoolNotExistsSimple() {
 		StringSearch search = new StringSearch("strings are here");
-		assertEquals(-1, search.getIndex("apples", StringSearch.SearchType.HOR));
+		char[] alpha = search.genAlphabet(search.text);
+		assertEquals(-1, search.getIndex("apples", StringSearch.SearchType.HOR, alpha));
 	}
 	
 	@Test
@@ -167,340 +295,305 @@ public class TestingStringSearchClass {
 		//There should only be 9 exact matches of the string
 		// "species" according to Eclipse IDE's find/replace
 		StringSearch search = new StringSearch(originSpecies);
-		assertEquals(1661, search.getIndex("species", StringSearch.SearchType.HOR));
+		char[] alpha = search.genAlphabet(search.text);
+		assertEquals(2331, search.getIndex("species", StringSearch.SearchType.HOR, alpha));
 	}
 	@Test
 	public void testStringSearchHoorspoolNotExistsLong() {
 		StringSearch search = new StringSearch(originSpecies);
-		assertEquals(-1, search.getIndex("Nintendo", StringSearch.SearchType.HOR));
+		char[] alpha = search.genAlphabet(search.text);
+		assertEquals(-1, search.getIndex("Nintendo", StringSearch.SearchType.HOR, alpha));
 	}
 	
-	/*@Test
-	public void testGenerateAlphabet() {
-		StringSearch search = new StringSearch();
-		alphastrn
-	} */
-	
-	@Test
-	public void testAll3WithSize100NotFound() {
-		TestInit(100);
-		assertEquals("Origins string too short.",nSize, partialDarwin.length());
-		assertEquals("Origins string too short.",nSize, partialBible.length());
-		for(int i = 1; i <= testLoops; i++) {
-			assertEquals(-1, originSearch.getIndex("Nintendo", StringSearch.SearchType.HOR));
-			assertEquals(-1, originSearch.getIndex("Nintendo", StringSearch.SearchType.BRUTE));
-			//assertEquals(-1, originSearch.getIndex("Nintendo", StringSearch.SearchType.BOYER));
-			assertEquals(-1, bibleSearch.getIndex("Nintendo", StringSearch.SearchType.HOR));
-			assertEquals(-1, bibleSearch.getIndex("Nintendo", StringSearch.SearchType.BRUTE));
-			//assertEquals(-1, bibleSearch.getIndex("Nintendo", StringSearch.SearchType.BOYER));
-		}		
-		TestCleanup();
+/*	@Test
+	public void testBruteWorstCaseGeneration() {
+		int textSize = 100, patternSize = 10, limit = 10000;
+		TestInit(textSize, patternSize, PatternLocation.BRUTEWORST);
+		String originsCompareStr = "is for th" + '\u000F';
+		String bibleCompareStr = "yone anyw" + '\u000F';
+		assertEquals("Brute Worst generation failed", bibleCompareStr, biblePattern);
+		assertEquals("Brute Worst generation failed", originsCompareStr, darwinPattern);
 	}
-	@Test
-	public void testAll3WithSize1000NotFound() {
-		TestInit(1000);
-		assertEquals("Origins string too short.",nSize, partialDarwin.length());
-		assertEquals("Origins string too short.",nSize, partialBible.length());
-		for(int i = 1; i <= testLoops; i++) {
-			assertEquals(-1, originSearch.getIndex("Nintendo", StringSearch.SearchType.HOR));
-			assertEquals(-1, originSearch.getIndex("Nintendo", StringSearch.SearchType.BRUTE));
-			//assertEquals(-1, originSearch.getIndex("Nintendo", StringSearch.SearchType.BOYER));
-			assertEquals(-1, bibleSearch.getIndex("Nintendo", StringSearch.SearchType.HOR));
-			assertEquals(-1, bibleSearch.getIndex("Nintendo", StringSearch.SearchType.BRUTE));
-			//assertEquals(-1, bibleSearch.getIndex("Nintendo", StringSearch.SearchType.BOYER));
-		}	
-		TestCleanup();		
-	}
-	@Test
-	public void testAll3WithSize10000NotFound() {
-		TestInit(10000);
-		assertEquals("Origins string too short.",nSize, partialDarwin.length());
-		assertEquals("Origins string too short.",nSize, partialBible.length());
-		for(int i = 1; i <= testLoops; i++) {
-			assertEquals(-1, originSearch.getIndex("Nintendo", StringSearch.SearchType.HOR));
-			assertEquals(-1, originSearch.getIndex("Nintendo", StringSearch.SearchType.BRUTE));
-			//assertEquals(-1, originSearch.getIndex("Nintendo", StringSearch.SearchType.BOYER));
-			assertEquals(-1, bibleSearch.getIndex("Nintendo", StringSearch.SearchType.HOR));
-			assertEquals(-1, bibleSearch.getIndex("Nintendo", StringSearch.SearchType.BRUTE));
-			//assertEquals(-1, bibleSearch.getIndex("Nintendo", StringSearch.SearchType.BOYER));
-		}	
-		TestCleanup();		
-	}
-	@Test
-	public void testAll3WithSize100000NotFound() {
-		TestInit(100000);
-		assertEquals("Origins string too short.",nSize, partialDarwin.length());
-		assertEquals("Origins string too short.",nSize, partialBible.length());
-		for(int i = 1; i <= testLoops; i++) {
-			assertEquals(-1, originSearch.getIndex("Nintendo", StringSearch.SearchType.HOR));
-			assertEquals(-1, originSearch.getIndex("Nintendo", StringSearch.SearchType.BRUTE));
-			//assertEquals(-1, originSearch.getIndex("Nintendo", StringSearch.SearchType.BOYER));
-			assertEquals(-1, bibleSearch.getIndex("Nintendo", StringSearch.SearchType.HOR));
-			assertEquals(-1, bibleSearch.getIndex("Nintendo", StringSearch.SearchType.BRUTE));
-			//assertEquals(-1, bibleSearch.getIndex("Nintendo", StringSearch.SearchType.BOYER));
-		}	
-		TestCleanup();
-	}
-
-	@Test
-	public void testAll3WithSize1000000NotFound() {
-		TestInit(1000000);
-		assertEquals("Origins string too short.",nSize, partialDarwin.length());
-		assertEquals("Origins string too short.",nSize, partialBible.length());
-		for(int i = 1; i <= testLoops; i++) {
-			assertEquals(-1, originSearch.getIndex("Nintendo", StringSearch.SearchType.HOR));
-			assertEquals(-1, originSearch.getIndex("Nintendo", StringSearch.SearchType.BRUTE));
-			//assertEquals(-1, originSearch.getIndex("Nintendo", StringSearch.SearchType.BOYER));
-			assertEquals(-1, bibleSearch.getIndex("Nintendo", StringSearch.SearchType.HOR));
-			assertEquals(-1, bibleSearch.getIndex("Nintendo", StringSearch.SearchType.BRUTE));
-			//assertEquals(-1, bibleSearch.getIndex("Nintendo", StringSearch.SearchType.BOYER));
-		}	
-		TestCleanup();
-	}
-	
-	@Test
-	public void testAll3WithSize100Found() {
-		TestInit(100);
-		assertEquals("Origins string too short.",nSize, partialDarwin.length());
-		assertEquals("Origins string too short.",nSize, partialBible.length());
-		for(int i = 1; i <= testLoops; i++) {
-			assertEquals(-1, originSearch.getIndex("species", StringSearch.SearchType.HOR));
-			assertEquals(-1, originSearch.getIndex("species", StringSearch.SearchType.BRUTE));
-			//assertEquals(-1, originSearch.getIndex("species", StringSearch.SearchType.BOYER));
-			assertEquals(-1, bibleSearch.getIndex("Jesus", StringSearch.SearchType.HOR));
-			assertEquals(-1, bibleSearch.getIndex("Jesus", StringSearch.SearchType.BRUTE));
-			//assertEquals(-1, bibleSearch.getIndex("Jesus", StringSearch.SearchType.BOYER));
-		}		
-		TestCleanup();
-	}
-	
-	
-	/*@Test
-	public void testStringSearchHoorspoolExistsLong100000() {
-		StringSearch search = new StringSearch(originSpecies);
-		for(int i = 1; i <= 10000; i++) {
-			assertEquals(2331, search.getIndex("species", StringSearch.SearchType.HOR));			
-		}
-	}
-	
-	@Test
-	public void testStringSearchHoorspoolNotExistsLong100000() {
-		StringSearch search = new StringSearch(originSpecies);
-		for(int i = 1; i <= 10000; i++) {
-			assertEquals(2331, search.getIndex("Nintendo", StringSearch.SearchType.HOR));			
-		}
-	}*/
-		
-	/* String originTenChapts = new String("ON THE ORIGIN OF SPECIES.\n" + 
-			"\n" + 
-			"OR THE PRESERVATION OF FAVOURED RACES IN THE STRUGGLE FOR LIFE.\n" + 
-			"\n" + 
-			"\n" + 
-			"By Charles Darwin, M.A.,\n" + 
-			"\n" + 
-			"Fellow Of The Royal, Geological, Linnaean, Etc., Societies;\n" + 
-			"\n" + 
-			"Author Of 'Journal Of Researches During H.M.S. Beagle's Voyage Round The\n" + 
-			"World.'\n" + 
-			"\n" + 
-			"\n" + 
-			"LONDON:\n" + 
-			"\n" + 
-			"JOHN MURRAY, ALBEMARLE STREET.\n" + 
-			"\n" + 
-			"1859.\n" + 
-			"\n" + 
-			"\n" + 
-			"Down, Bromley, Kent,\n" + 
-			"\n" + 
-			"October 1st, 1859.\n" + 
-			"\n" + 
-			"\n" + 
-			"\n" + 
-			"\"But with regard to the material world, we can at least go so far as\n" + 
-			"this--we can perceive that events are brought about not by insulated\n" + 
-			"interpositions of Divine power, exerted in each particular case, but by\n" + 
-			"the establishment of general laws.\"\n" + 
-			"\n" + 
-			"W. Whewell: Bridgewater Treatise.\n" + 
-			"\n" + 
-			"\n" + 
-			"\n" + 
-			"\"To conclude, therefore, let no man out of a weak conceit of sobriety,\n" + 
-			"or an ill-applied moderation, think or maintain, that a man can search\n" + 
-			"too far or be too well studied in the book of God's word, or in the book\n" + 
-			"of God's works; divinity or philosophy; but rather let men endeavour an\n" + 
-			"endless progress or proficience in both.\"\n" + 
-			"\n" + 
-			"Bacon: Advancement of Learning.\n" + 
-			"\n" + 
-			"\n" + 
-			"CONTENTS.\n" + 
-			"\n" + 
-			"\n" + 
-			"\n" + 
-			"  INTRODUCTION.\n" + 
-			"\n" + 
-			"\n" + 
-			"  CHAPTER 1. VARIATION UNDER DOMESTICATION.\n" + 
-			"\n" + 
-			"  Causes of Variability.\n" + 
-			"  Effects of Habit.\n" + 
-			"  Correlation of Growth.\n" + 
-			"  Inheritance.\n" + 
-			"  Character of Domestic Varieties.\n" + 
-			"  Difficulty of distinguishing between Varieties and Species.\n" + 
-			"  Origin of Domestic Varieties from one or more Species.\n" + 
-			"  Domestic Pigeons, their Differences and Origin.\n" + 
-			"  Principle of Selection anciently followed, its Effects.\n" + 
-			"  Methodical and Unconscious Selection.\n" + 
-			"  Unknown Origin of our Domestic Productions.\n" + 
-			"  Circumstances favourable to Man's power of Selection.\n" + 
-			"\n" + 
-			"\n" + 
-			"  CHAPTER 2. VARIATION UNDER NATURE.\n" + 
-			"\n" + 
-			"  Variability.\n" + 
-			"  Individual Differences.\n" + 
-			"  Doubtful species.\n" + 
-			"  Wide ranging, much diffused, and common species vary most.\n" + 
-			"  Species of the larger genera in any country vary more than the species\n" + 
-			"  of the smaller genera.\n" + 
-			"  Many of the species of the larger genera resemble varieties in being\n" + 
-			"  very closely, but unequally, related to each other, and in having\n" + 
-			"  restricted ranges.\n" + 
-			"\n" + 
-			"\n" + 
-			"  CHAPTER 3. STRUGGLE FOR EXISTENCE.\n" + 
-			"\n" + 
-			"  Bears on natural selection.\n" + 
-			"  The term used in a wide sense.\n" + 
-			"  Geometrical powers of increase.\n" + 
-			"  Rapid increase of naturalised animals and plants.\n" + 
-			"  Nature of the checks to increase.\n" + 
-			"  Competition universal.\n" + 
-			"  Effects of climate.\n" + 
-			"  Protection from the number of individuals.\n" + 
-			"  Complex relations of all animals and plants throughout nature.\n" + 
-			"  Struggle for life most severe between individuals and varieties of the\n" + 
-			"  same species; often severe between species of the same genus.\n" + 
-			"  The relation of organism to organism the most important of all\n" + 
-			"  relations.\n" + 
-			"\n" + 
-			"\n" + 
-			"  CHAPTER 4. NATURAL SELECTION.\n" + 
-			"\n" + 
-			"  Natural Selection: its power compared with man's selection, its power\n" + 
-			"  on characters of trifling importance, its power at all ages and on\n" + 
-			"  both sexes.\n" + 
-			"  Sexual Selection.\n" + 
-			"  On the generality of intercrosses between individuals of the same\n" + 
-			"  species.\n" + 
-			"  Circumstances favourable and unfavourable to Natural Selection,\n" + 
-			"  namely, intercrossing, isolation, number of individuals.\n" + 
-			"  Slow action.\n" + 
-			"  Extinction caused by Natural Selection.\n" + 
-			"  Divergence of Character, related to the diversity of inhabitants of\n" + 
-			"  any small area, and to naturalisation.\n" + 
-			"  Action of Natural Selection, through Divergence of Character and\n" + 
-			"  Extinction, on the descendants from a common parent.\n" + 
-			"  Explains the Grouping of all organic beings.\n" + 
-			"\n" + 
-			"\n" + 
-			"  CHAPTER 5. LAWS OF VARIATION.\n" + 
-			"\n" + 
-			"  Effects of external conditions.\n" + 
-			"  Use and disuse, combined with natural selection; organs of flight and\n" + 
-			"  of vision.\n" + 
-			"  Acclimatisation.\n" + 
-			"  Correlation of growth.\n" + 
-			"  Compensation and economy of growth.\n" + 
-			"  False correlations.\n" + 
-			"  Multiple, rudimentary, and lowly organised structures variable.\n" + 
-			"  Parts developed in an unusual manner are highly variable: specific\n" + 
-			"  characters more variable than generic: secondary sexual characters\n" + 
-			"  variable.\n" + 
-			"  Species of the same genus vary in an analogous manner.\n" + 
-			"  Reversions to long-lost characters.\n" + 
-			"  Summary.\n" + 
-			"\n" + 
-			"\n" + 
-			"  CHAPTER 6. DIFFICULTIES ON THEORY.\n" + 
-			"\n" + 
-			"  Difficulties on the theory of descent with modification.\n" + 
-			"  Transitions.\n" + 
-			"  Absence or rarity of transitional varieties.\n" + 
-			"  Transitions in habits of life.\n" + 
-			"  Diversified habits in the same species.\n" + 
-			"  Species with habits widely different from those of their allies.\n" + 
-			"  Organs of extreme perfection.\n" + 
-			"  Means of transition.\n" + 
-			"  Cases of difficulty.\n" + 
-			"  Natura non facit saltum.\n" + 
-			"  Organs of small importance.\n" + 
-			"  Organs not in all cases absolutely perfect.\n" + 
-			"  The law of Unity of Type and of the Conditions of Existence embraced\n" + 
-			"  by the theory of Natural Selection.\n" + 
-			"\n" + 
-			"\n" + 
-			"  CHAPTER 7. INSTINCT.\n" + 
-			"\n" + 
-			"  Instincts comparable with habits, but different in their origin.\n" + 
-			"  Instincts graduated.\n" + 
-			"  Aphides and ants.\n" + 
-			"  Instincts variable.\n" + 
-			"  Domestic instincts, their origin.\n" + 
-			"  Natural instincts of the cuckoo, ostrich, and parasitic bees.\n" + 
-			"  Slave-making ants.\n" + 
-			"  Hive-bee, its cell-making instinct.\n" + 
-			"  Difficulties on the theory of the Natural Selection of instincts.\n" + 
-			"  Neuter or sterile insects.\n" + 
-			"  Summary.\n" + 
-			"\n" + 
-			"\n" + 
-			"  CHAPTER 8. HYBRIDISM.\n" + 
-			"\n" + 
-			"  Distinction between the sterility of first crosses and of hybrids.\n" + 
-			"  Sterility various in degree, not universal, affected by close\n" + 
-			"  interbreeding, removed by domestication.\n" + 
-			"  Laws governing the sterility of hybrids.\n" + 
-			"  Sterility not a special endowment, but incidental on other\n" + 
-			"  differences.\n" + 
-			"  Causes of the sterility of first crosses and of hybrids.\n" + 
-			"  Parallelism between the effects of changed conditions of life and\n" + 
-			"  crossing.\n" + 
-			"  Fertility of varieties when crossed and of their mongrel offspring not\n" + 
-			"  universal.\n" + 
-			"  Hybrids and mongrels compared independently of their fertility.\n" + 
-			"  Summary.\n" + 
-			"\n" + 
-			"\n" + 
-			"  CHAPTER 9. ON THE IMPERFECTION OF THE GEOLOGICAL RECORD.\n" + 
-			"\n" + 
-			"  On the absence of intermediate varieties at the present day.\n" + 
-			"  On the nature of extinct intermediate varieties; on their number.\n" + 
-			"  On the vast lapse of time, as inferred from the rate of deposition and\n" + 
-			"  of denudation.\n" + 
-			"  On the poorness of our palaeontological collections.\n" + 
-			"  On the intermittence of geological formations.\n" + 
-			"  On the absence of intermediate varieties in any one formation.\n" + 
-			"  On the sudden appearance of groups of species.\n" + 
-			"  On their sudden appearance in the lowest known fossiliferous strata.\n" + 
-			"\n" + 
-			"\n" + 
-			"  CHAPTER 10. ON THE GEOLOGICAL SUCCESSION OF ORGANIC BEINGS.\n" + 
-			"\n" + 
-			"  On the slow and successive appearance of new species.\n" + 
-			"  On their different rates of change.\n" + 
-			"  Species once lost do not reappear.\n" + 
-			"  Groups of species follow the same general rules in their appearance\n" + 
-			"  and disappearance as do single species.\n" + 
-			"  On Extinction.\n" + 
-			"  On simultaneous changes in the forms of life throughout the world.\n" + 
-			"  On the affinities of extinct species to each other and to living\n" + 
-			"  species.\n" + 
-			"  On the state of development of ancient forms.\n" + 
-			"  On the succession of the same types within the same areas.\n" + 
-			"  Summary of preceding and present chapters.");
 	*/
+	/*** Begin data generating tests ***/
+	
+	// This test keeps the pattern size minimal but increases the text size incrementally
+	// Should be linear across the board
+	@Test
+	public void testAll3VariableTextSizeNotFound() throws Exception{
+		int textSize = 100, patternSize = 1, limit = 100000;
+		double avgTime;
+		TextChoice text;
+		PrintWriter out;
+			out = new PrintWriter(new FileWriter("all3VariableTextSizeNotFound.csv"));
+			out.print("search"+'\t'+"text"+'\t'+"n"+'\t'+"m"+'\t'+"avgTime"+'\n');
+		while(textSize <= limit) {
+			TestInit(textSize, patternSize, PatternLocation.NONE);
+			
+			text = TextChoice.ORIGINS;
+			avgTime = testText(text, out, textSize, patternSize, -1);
+			
+			text = TextChoice.BIBLE;
+			avgTime = testText(text, out, textSize, patternSize, -1);
+			
+			//Baselines
+			out.print("n*m"+'\t'+text+'\t'+textSize+'\t'+patternSize+'\t'+(textSize*patternSize)+'\n');
+			out.print("n+m"+'\t'+text+'\t'+textSize+'\t'+patternSize+'\t'+(textSize+patternSize)+'\n');
+			out.print("n"+'\t'+text+'\t'+textSize+'\t'+patternSize+'\t'+textSize+'\n');
+			out.print("n/m"+'\t'+text+'\t'+textSize+'\t'+patternSize+'\t'+(textSize/patternSize)+'\n');
+			
+			TestCleanup();
+			textSize = textSize + 1000;
+		}
+		out.close();
+	}
+	
+	// This test keeps the text size large and increases pattern sizes
+	// This should also be linear in all cases
+	@Test
+	public void testAll3StableTextSizeNotFound() throws Exception{
+		int textSize = 10000, patternSize = 1, limit = 100;
+		double avgTime;
+		TextChoice text;
+		PrintWriter out;
+			out = new PrintWriter(new FileWriter("all3StableTextSizeNotFound.csv"));
+			out.print("search"+'\t'+"text"+'\t'+"n"+'\t'+"m"+'\t'+"avgTime"+'\n');
+		while(patternSize <= limit && patternSize <= textSize ) {
+			TestInit(textSize, patternSize, PatternLocation.NONE);
+			
+			text = TextChoice.ORIGINS;
+			avgTime = testText(text, out, textSize, patternSize, -1);
+			
+			text = TextChoice.BIBLE;
+			avgTime = testText(text, out, textSize, patternSize, -1);
+			//Baselines
+			out.print("n*m"+'\t'+text+'\t'+textSize+'\t'+patternSize+'\t'+(textSize*patternSize)+'\n');
+			out.print("n+m"+'\t'+text+'\t'+textSize+'\t'+patternSize+'\t'+(textSize+patternSize)+'\n');
+			out.print("n"+'\t'+text+'\t'+textSize+'\t'+patternSize+'\t'+textSize+'\n');
+			out.print("n/m"+'\t'+text+'\t'+textSize+'\t'+patternSize+'\t'+(float)(textSize/patternSize)+'\n');
+			
+			TestCleanup();
+			patternSize = patternSize + 1;
+		}
+		out.close();
+	}
+	
+	// Evaluates an ever-increasing pattern size along with text size increases
+	@Test
+	public void testAll3VariableTextAndPatternNotFound() throws Exception{
+		int textSize = 10000, patternSize = 1, textLimit = 100000, patternLimit = 150;
+		
+		double avgTime;
+		TextChoice text;
+		PrintWriter out;
+			out = new PrintWriter(new FileWriter("all3VariableTextAndPatternNotFound.csv"));
+			out.print("search"+'\t'+"text"+'\t'+"n"+'\t'+"m"+'\t'+"avgTime"+'\n');
+		while(textSize <= textLimit) {
+			while(patternSize <= patternLimit) {
+				TestInit(textSize, patternSize, PatternLocation.NONE);
+			
+				text = TextChoice.ORIGINS;
+				avgTime = testText(text, out, textSize, patternSize, -1);
+			
+				text = TextChoice.BIBLE;
+				avgTime = testText(text, out, textSize, patternSize, -1);
+				//Baselines
+				out.print("n*m"+'\t'+text+'\t'+textSize+'\t'+patternSize+'\t'+(textSize*patternSize)+'\n');
+				out.print("n+m"+'\t'+text+'\t'+textSize+'\t'+patternSize+'\t'+(textSize+patternSize)+'\n');
+				out.print("n"+'\t'+text+'\t'+textSize+'\t'+patternSize+'\t'+textSize+'\n');
+				out.print("n/m"+'\t'+text+'\t'+textSize+'\t'+patternSize+'\t'+(float)(textSize/patternSize)+'\n');
+			
+				TestCleanup();
+				patternSize = patternSize + 1;
+			}
+			out.print("*****************************************");
+			textSize = textSize + 1000;
+		}
+		out.close();
+	}
+	
+	@Test
+	public void testAll3StableTextMedPatternNotFound() throws Exception{
+		int textSize = 10000, patternSize = 100, limit = 300;
+		double avgTime;
+		TextChoice text;
+		PrintWriter out;
+			out = new PrintWriter(new FileWriter("all3StableTextMedPatternNotFound.csv"));
+			out.print("search"+'\t'+"text"+'\t'+"n"+'\t'+"m"+'\t'+"avgTime"+'\n');
+		while(patternSize <= limit && patternSize <= textSize ) {
+			TestInit(textSize, patternSize, PatternLocation.NONE);
+			testLoops = 100;
+			
+			text = TextChoice.ORIGINS;
+			avgTime = testText(text, out, textSize, patternSize, -1);
+			
+			text = TextChoice.BIBLE;
+			avgTime = testText(text, out, textSize, patternSize, -1);
+			//Baselines
+			out.print("n*m"+'\t'+text+'\t'+textSize+'\t'+patternSize+'\t'+(textSize*patternSize)+'\n');
+			out.print("n+m"+'\t'+text+'\t'+textSize+'\t'+patternSize+'\t'+(textSize+patternSize)+'\n');
+			out.print("n"+'\t'+text+'\t'+textSize+'\t'+patternSize+'\t'+textSize+'\n');
+			out.print("n/m"+'\t'+text+'\t'+textSize+'\t'+patternSize+'\t'+(float)(textSize/patternSize)+'\n');
+			
+			TestCleanup();
+			patternSize = patternSize + 1;
+		}
+		out.close();
+	}
+	
+	@Test
+	// Brute worst case: searching all of M every Nth element
+	public void testBruteWorstCase() throws Exception{
+		int textSize = 500, maxTextSize = 100000, patternSize = 10, limit = 10000, patternStart = 0;
+		generateText(maxTextSize,1);
+		StringSearch generatedSearch = new StringSearch(generatedText);
+		double avgTime;
+		long oldLoops = testLoops;
+		testLoops = 1000;
+		TextChoice text;
+		PrintWriter out;
+			out = new PrintWriter(new FileWriter("testBruteWorstCase.csv"));
+			out.print("search"+'\t'+"text"+'\t'+"n"+'\t'+"m"+'\t'+"avgTime"+'\n');
+		//Grow our inputs
+		while(textSize < limit && patternSize < limit) {
+			TestInit(textSize, patternSize, PatternLocation.NONE);
+			
+			text = TextChoice.GENERATED;
+			generatePattern(PatternLocation.BRUTEWORST, patternStart, patternSize);	
+			avgTime = runTestLoops(text, StringSearch.SearchType.BRUTE, out);
+			out.print("brute"+'\t'+text+'\t'+textSize+'\t'+patternSize+'\t'+avgTime+'\n');
+
+			//Baselines
+			out.print("n*m"+'\t'+text+'\t'+textSize+'\t'+patternSize+'\t'+(textSize*patternSize)+'\n');
+			out.print("n"+'\t'+text+'\t'+textSize+'\t'+patternSize+'\t'+textSize+'\n');
+			
+			out.flush();
+			TestCleanup();
+			textSize += 50;
+			patternSize += 5;
+		}
+		out.close();
+		testLoops = oldLoops;
+	}
+	
+	@Test
+	public void testHorWorstCase() throws Exception{
+		int textSize = 500, maxTextSize = 100000, patternSize = 10, limit = 10000, patternStart = 0;
+		generateText(maxTextSize,1);
+		StringSearch generatedSearch = new StringSearch(generatedText);
+		double avgTime;
+		long oldLoops = testLoops;
+		testLoops = 1000;
+		TextChoice text;
+		PrintWriter out;
+			out = new PrintWriter(new FileWriter("testHorWorstCase.csv"));
+			out.print("search"+'\t'+"text"+'\t'+"n"+'\t'+"m"+'\t'+"avgTime"+'\n');
+		//Grow our inputs
+		while(textSize < limit && patternSize < limit) {
+			TestInit(textSize, patternSize, PatternLocation.NONE);
+			
+			text = TextChoice.GENERATED;
+			generatePattern(PatternLocation.HORWORST, patternStart, patternSize);	
+			avgTime = runTestLoops(text, StringSearch.SearchType.HOR, out);
+			out.print("horspool"+'\t'+text+'\t'+textSize+'\t'+patternSize+'\t'+avgTime+'\n');
+
+			//Baselines
+			out.print("n*m"+'\t'+text+'\t'+textSize+'\t'+patternSize+'\t'+(textSize*patternSize)+'\n');
+			out.print("n"+'\t'+text+'\t'+textSize+'\t'+patternSize+'\t'+textSize+'\n');
+			
+			out.flush();
+			TestCleanup();
+			textSize += 50;
+			patternSize += 5;
+		}
+		out.close();
+		testLoops = oldLoops;
+	}
+	
+	@Test
+	public void testBoyerWorstCase() throws Exception{
+		int textSize = 500, maxTextSize = 100000, patternSize = 10, limit = 10000, patternStart = 0;
+		generateText(maxTextSize,1);
+		StringSearch generatedSearch = new StringSearch(generatedText);
+		double avgTime;
+		TextChoice text;
+		PrintWriter out;
+			out = new PrintWriter(new FileWriter("testBoyerWorstCase"));
+			out.print("search"+'\t'+"text"+'\t'+"n"+'\t'+"m"+'\t'+"avgTime"+'\n');
+		//Grow our inputs
+		while(textSize < limit && patternSize < limit) {
+			TestInit(textSize, patternSize, PatternLocation.NONE);
+			
+			text = TextChoice.GENERATED;
+			generatePattern(PatternLocation.BOYERWORST, patternStart, patternSize);	
+			avgTime = runTestLoops(text, StringSearch.SearchType.HOR, out);
+			out.print("boyer"+'\t'+text+'\t'+textSize+'\t'+patternSize+'\t'+avgTime+'\n');
+
+			//Baselines
+			out.print("n/m"+'\t'+text+'\t'+textSize+'\t'+patternSize+'\t'+(float)(textSize/patternSize)+'\n');
+			out.print("n"+'\t'+text+'\t'+textSize+'\t'+patternSize+'\t'+textSize+'\n');
+			
+			out.flush();
+			TestCleanup();
+			textSize += 50;
+			patternSize += 5;
+		}
+		out.close();
+	}
+	
+	
+	private double testText(TextChoice text, PrintWriter out, int textSize, int patternSize, int patternType) {
+		double avgTime;
+		avgTime = runTestLoops(text, StringSearch.SearchType.BRUTE, out);
+		out.print("brute"+'\t'+text+'\t'+textSize+'\t'+patternSize+'\t'+avgTime+'\n');
+		out.flush();
+		avgTime = runTestLoops(text, StringSearch.SearchType.HOR, out);
+		out.print("horspool"+'\t'+text+'\t'+textSize+'\t'+patternSize+'\t'+avgTime+'\n');
+		out.flush();	
+		avgTime = runTestLoops(text, StringSearch.SearchType.BOYER, out);
+		out.print("boyer"+'\t'+text+'\t'+textSize+'\t'+patternSize+'\t'+avgTime+'\n');
+		out.flush();
+		return avgTime;
+	}
+	
+	private double runTestLoops(TextChoice text, StringSearch.SearchType type, PrintWriter out) {
+		long startTime, endTime, totalTime;
+		double avgTime;
+		StringSearch search = null;
+		String pattern = null;
+		char[] alphabet = null;
+		switch(text) {
+		case ORIGINS: //Origins
+			search = originSearch;
+			pattern = darwinPattern;
+			break;
+		case BIBLE: //Bible
+			search = bibleSearch;
+			pattern = biblePattern;
+			break;	
+		case GENERATED:
+			search = generatedSearch;
+			pattern = generatedPattern;
+			break;
+		}
+		switch(type) {
+		case BOYER:
+		case HOR:
+			alphabet = search.genAlphabet(search.text);
+			break;
+		}
+		startTime = System.currentTimeMillis();
+		for(int i = 0; i < testLoops; i++) {
+			search.getIndex(pattern, type, alphabet);
+		}
+		endTime = System.currentTimeMillis();
+		totalTime = (endTime - startTime);
+		avgTime = totalTime/(double)testLoops;
+		return avgTime;
+	}
+	
+	public static void main(String [ ] args) throws Exception {
+		TestingStringSearchClass test = new TestingStringSearchClass();
+		test.testBruteWorstCase();
+	}
 }
